@@ -1,6 +1,6 @@
 # ia_agents
  
-# 📘 RAG Chat with PDF/Web
+# RAG Chat with PDF/Web
 
 This project is a **Retrieval-Augmented Generation (RAG) chatbot** that can answer questions by retrieving information from uploaded PDFs or from web sources.  
 It integrates **LangChain, OpenAI API, FAISS/Chroma** for semantic search, combined with a **Flask backend** and a **TailwindCSS frontend**.  
