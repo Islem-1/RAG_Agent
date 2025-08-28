@@ -1,0 +1,11 @@
+flask
+python-dotenv
+langchain-community
+pypdf
+sentence-transformers
+faiss-cpu
+neo4j
+spacy
+spacy-transformers
+spacy-lookups-data
+openai

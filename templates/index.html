@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Agent AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #sourceInputDiv {
+            transition: opacity 0.5s ease, height 0.5s ease;
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+        }
+        #sourceInputDiv.visible {
+            opacity: 1;
+            height: auto;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex items-center justify-center">
+
+    <div class="container max-w-3xl w-full p-6">
+        <div class="form-container bg-gray-800 p-8 rounded-2xl shadow-lg flex flex-col min-h-[600px]">
+            <h2 class="text-2xl font-bold text-center mb-6 text-indigo-400">⚡ RAG Agent (PDF & Web)</h2>
+            
+            <form id="qaForm" class="space-y-4">
+                <div>
+                    <label for="source" class="block mb-2 font-semibold">Source:</label>
+                    <select id="source" name="source" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-indigo-500">
+                        <option value="web">🌍 Web (URL)</option>
+                        <option value="local_pdf">📄 PDF (local)</option>
+                    </select>
+                </div>
+
+                <div id="sourceInputDiv"></div>
+
+                <div>
+                    <label for="question" class="block mb-2 font-semibold">Your question:</label>
+                    <textarea id="question" name="question" placeholder="Ask your question here..." 
+                        class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-indigo-500 h-24"></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition">
+                    🚀 Ask Question
+                </button>
+            </form>
+
+            <!-- Chat container -->
+            <div id="answer" class="chat-container bg-gray-700 p-4 rounded-xl shadow-inner mt-6 flex flex-col flex-grow overflow-y-auto space-y-2">
+                <!-- Messages will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('qaForm');
+        const sourceSelect = document.getElementById('source');
+        const sourceInputDiv = document.getElementById('sourceInputDiv');
+        const answerDiv = document.getElementById('answer');
+
+        let conversationHistory = [];
+
+        function updateSourceInput() {
+            const selectedSource = sourceSelect.value;
+            sourceInputDiv.innerHTML = '';
+            sourceInputDiv.classList.remove('visible');
+
+            if (selectedSource === 'web') {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'url';
+                input.name = 'url';
+                input.placeholder = 'https://example.com';
+                input.className = "w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-indigo-500";
+                sourceInputDiv.appendChild(input);
+                sourceInputDiv.classList.add('visible');
+            } else if (selectedSource === 'local_pdf') {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.id = 'pdfFile';
+                input.name = 'pdf_file';
+                input.accept = '.pdf';
+                input.className = "w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-indigo-500";
+                sourceInputDiv.appendChild(input);
+                sourceInputDiv.classList.add('visible');
+            }
+        }
+
+        sourceSelect.addEventListener('change', updateSourceInput);
+        updateSourceInput();
+
+        function renderHistory() {
+            answerDiv.innerHTML = '';
+            conversationHistory.forEach(message => {
+                const messageContainer = document.createElement('div');
+                const messageBubble = document.createElement('div');
+                
+                messageBubble.className = `message-bubble px-4 py-2 rounded-2xl max-w-[75%] ${
+                    message.type === 'human' 
+                        ? 'bg-indigo-600 text-white self-end ml-auto rounded-br-none'
+                        : 'bg-gray-600 text-gray-200 self-start mr-auto rounded-bl-none'
+                }`;
+                
+                messageBubble.textContent = message.content;
+                messageContainer.appendChild(messageBubble);
+                answerDiv.appendChild(messageContainer);
+            });
+            answerDiv.scrollTop = answerDiv.scrollHeight;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userQuestion = document.getElementById('question').value.trim();
+            if (!userQuestion) return;
+
+            conversationHistory.push({ type: 'human', content: userQuestion });
+            renderHistory();
+
+            const loadingMessage = { type: 'ai', content: '⏳ Generating response...' };
+            conversationHistory.push(loadingMessage);
+            renderHistory();
+
+            const formData = new FormData(form);
+            formData.append('history', JSON.stringify(conversationHistory));
+
+            try {
+                const response = await fetch("/ask", { method: "POST", body: formData });
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+                const data = await response.json();
+                const loadingIndex = conversationHistory.findIndex(msg => msg.content === '⏳ Generating response...');
+                if (loadingIndex > -1) {
+                    conversationHistory[loadingIndex].content = data.history[data.history.length - 1].content;
+                    conversationHistory[loadingIndex].type = 'ai';
+                }
+            } catch (error) {
+                console.error("Request error:", error);
+                const loadingIndex = conversationHistory.findIndex(msg => msg.content === '⏳ Generating response...');
+                if (loadingIndex > -1) {
+                    conversationHistory[loadingIndex].content = `⚠️ Error: ${error.message}`;
+                }
+            } finally {
+                renderHistory();
+            }
+        });
+    </script>
+</body>
+</html>

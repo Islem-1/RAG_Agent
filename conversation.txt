@@ -1,0 +1,8 @@
+Your Conversation Log: 
+You: what is Semimultipose used for ?
+AI: Based on the provided text, SemiMultiPose is used for multi-animal pose estimation.  It enhances performance and predictive power, especially when dealing with sparsely labeled datasets.
+You: what does the framework estimate
+AI: ⏳ Generating response...
+You: what does the framework estimate
+AI: Based on the provided text, the framework (SLEAP) estimates the location of body parts in images, specifically the body parts of flies.  The text mentions heatmaps and target maps, indicating a prediction of spatial locations.
+End of Conversation
